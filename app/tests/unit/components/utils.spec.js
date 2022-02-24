@@ -1,5 +1,8 @@
+const { AuthMode } = require('../../../src/components/constants');
+const config = require('config');
 const utils = require('../../../src/components/utils');
 
+jest.mock('config');
 
 
 describe('delimit', () => {
@@ -38,7 +41,7 @@ describe('join', () => {
 
 describe('getPath', () => {
   afterEach(() => {
-    jest.resetAllMocks();
+    jest.restoreAllMocks();
   });
 
   const delimitSpy = jest.spyOn(utils, 'delimit');
@@ -52,5 +55,43 @@ describe('getPath', () => {
     expect(delimitSpy).toHaveBeenCalledTimes(1);
     expect(joinSpy).toHaveBeenCalledTimes(1);
     expect(joinSpy).toHaveBeenCalledWith('abc', 'obj');
+  });
+});
+
+describe('getAppAuthMode', () => {
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  it('should return full auth', () => {
+    // define enabled flags
+    config.has.mockReturnValue(true);
+
+    expect(utils.getAppAuthMode()).toEqual(AuthMode.FULLAUTH);
+    expect(config.has).toHaveBeenCalledTimes(2);
+  });
+
+  it('should return no auth', () => {
+    // define enabled flags
+    config.has.mockReturnValue(false);
+
+    expect(utils.getAppAuthMode()).toEqual(AuthMode.NOAUTH);
+    expect(config.has).toHaveBeenCalledTimes(2);
+  });
+
+  it('should return basic auth', () => {
+    // define enabled flags
+    config.has.mockImplementation(k => k == 'basicAuth.enabled' ? true : k == 'keycloak.enabled' ? false : undefined);
+
+    expect(utils.getAppAuthMode()).toEqual(AuthMode.BASICAUTH);
+    expect(config.has).toHaveBeenCalledTimes(2);
+  });
+
+  it('should return oidc auth', () => {
+    // define enabled flags
+    config.has.mockImplementation(k => k == 'keycloak.enabled' ? true : k == 'basicAuth.enabled' ? false : undefined);
+
+    expect(utils.getAppAuthMode()).toEqual(AuthMode.OIDCAUTH);
+    expect(config.has).toHaveBeenCalledTimes(2);
   });
 });
